@@ -54,23 +54,19 @@ class _SegmentListState extends State<SegmentList> {
     return ListView.builder(
         itemCount: count,
         itemBuilder: ((context, index) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 0.0),
-            child: Card(
-              elevation: 10.0,
-              child: ListTile(
-                title: Text(
-                  segmentList[index].name.toString(),
-                  style: kFontBold,
-                ),
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: ((context) {
-                    return EditSegment(segment: segmentList[index]);
-                  }))).then((value) => getAllSegments());
-                },
-              ),
+          return ListTile(
+            shape: Border(
+              bottom: BorderSide(),
             ),
+            title: Text(
+              segmentList[index].name.toString(),
+              style: kFontBold,
+            ),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: ((context) {
+                return EditSegment(segment: segmentList[index]);
+              }))).then((value) => getAllSegments());
+            },
           );
         }));
   }

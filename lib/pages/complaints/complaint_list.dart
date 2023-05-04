@@ -50,25 +50,21 @@ class _ComplaintListState extends State<ComplaintList> {
     return ListView.builder(
         itemCount: count,
         itemBuilder: ((context, index) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 0.0),
-            child: Card(
-              elevation: 10.0,
-              child: ListTile(
-                title: Text(
-                  complaintList[index].name.toString(),
-                  style: kFontBold,
-                ),
-                subtitle: Text(complaintList[index].segmentName.toString(),
-                    style: kFontLight),
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: ((context) {
-                    return EditComplaint(complaint: complaintList[index]);
-                  }))).then((value) => getAllComplaints());
-                },
-              ),
+          return ListTile(
+            shape: Border(
+              bottom: BorderSide(),
             ),
+            title: Text(
+              complaintList[index].name.toString(),
+              style: kFontBold,
+            ),
+            subtitle: Text(complaintList[index].segmentName.toString(),
+                style: kFontLight),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: ((context) {
+                return EditComplaint(complaint: complaintList[index]);
+              }))).then((value) => getAllComplaints());
+            },
           );
         }));
   }

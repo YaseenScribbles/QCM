@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:qcm/api/company_service.dart';
 import 'package:qcm/api/complaint_service.dart';
@@ -11,7 +13,11 @@ import 'package:qcm/model/complaint.dart';
 import 'package:qcm/model/inspection.dart';
 import 'package:qcm/model/making_list.dart';
 import 'package:qcm/model/segment.dart';
+import 'package:qcm/pages/inspections/display_picture.dart';
 import 'package:qcm/pages/inspections/inspection_list.dart';
+import 'package:camera/camera.dart';
+import 'package:qcm/pages/inspections/take_picture.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class EditInspection extends StatefulWidget {
   const EditInspection(
@@ -49,6 +55,9 @@ class _EditInspectionState extends State<EditInspection> {
   final companyService = CompanyService();
   final complaintService = ComplaintService();
   final service = InspectionService();
+  late CameraDescription cameraDescription;
+  late XFile image;
+  int imgPathCount = 0;
 
   updateComplaintList(int value) {
     setState(() {
@@ -127,6 +136,9 @@ class _EditInspectionState extends State<EditInspection> {
     });
 
     if (!segmentValidation && !complaintValidation) {
+      setState(() {
+        isLoading = true;
+      });
       final inspection = Inspection();
       inspection.id = widget.inspection.id;
       inspection.uniqueId = widget.result.uniqueId;
@@ -136,14 +148,23 @@ class _EditInspectionState extends State<EditInspection> {
       inspection.companyId = int.parse(widget.result.companyId!);
       inspection.userId = userId;
       var result = await service.updateInspection(inspection);
+      if (imagePaths.isNotEmpty && result == 'Success') {
+        await service.savePicture(widget.inspection.id!);
+      }
       customSnackBar(context, result);
       if (result == 'Success') {
+        imagePaths = [];
         Navigator.pop(context);
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: ((context) {
           return const InspectionList();
         })));
       }
+
+      setState(() {
+        isLoading = false;
+        imgPathCount = imagePaths.length;
+      });
     }
   }
 
@@ -153,6 +174,7 @@ class _EditInspectionState extends State<EditInspection> {
     var result = await service.deleteInspection(inspection);
     customSnackBar(context, result);
     if (result == 'Success') {
+      imagePaths = [];
       Navigator.pop(context);
       Navigator.pop(context);
       Navigator.pushReplacement(context, MaterialPageRoute(builder: ((context) {
@@ -160,6 +182,40 @@ class _EditInspectionState extends State<EditInspection> {
       })));
     }
   }
+
+  getCamera() async {
+    // Obtain a list of the available cameras on the device.
+    final cameras = await availableCameras();
+    // Get a specific camera from the list of available cameras.
+    cameraDescription = cameras.first;
+  }
+
+  updateImage(String path) {
+    setState(() {
+      imagePath = path;
+    });
+  }
+
+  getImages() async {
+    imagePaths = [];
+    var cache = DefaultCacheManager();
+    List<String> results =
+        await service.getImageByInspectionId(widget.inspection.id!);
+    if (results.isNotEmpty) {
+      for (var result in results) {
+        var file = await cache.getSingleFile(result);
+        imagePaths.add(file.path);
+        // imagePaths.add(await _findPath(result));
+      }
+    }
+    imgPathCount = imagePaths.length;
+  }
+
+  // Future<String> _findPath(String imageUrl) async {
+  //   final cache = DefaultCacheManager();
+  //   final file = await cache.getSingleFile(imageUrl);
+  //   return file.path;
+  // }
 
   loadForm() {
     return SingleChildScrollView(
@@ -317,8 +373,85 @@ class _EditInspectionState extends State<EditInspection> {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              if (imgPathCount > 0) ...[
+                const SizedBox(
+                  height: 20.0,
+                ),
+                SizedBox(
+                  height: 200.0,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    scrollDirection: Axis.horizontal,
+                    physics: ClampingScrollPhysics(),
+                    itemCount: imgPathCount,
+                    itemBuilder: ((context, index) {
+                      return Stack(
+                        children: <Widget>[
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context)
+                                  .push(MaterialPageRoute(builder: ((context) {
+                                return DisplayPictureScreen(
+                                    imagePath: imagePaths[index]);
+                              })));
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  width: 2.0,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                              height: 200.0,
+                              width: MediaQuery.of(context).size.width * 0.3,
+                              child: Image.file(
+                                File(imagePaths[index]),
+                              ),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: GestureDetector(
+                                onTap: () {
+                                  imagePaths.removeAt(index);
+                                  setState(() {
+                                    imgPathCount = imagePaths.length;
+                                  });
+                                },
+                                child: Container(
+                                  child: Icon(Icons.close_outlined),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ],
               const SizedBox(
-                height: 20.0,
+                height: 5.0,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      await getCamera();
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: ((context) {
+                        return TakePictureScreen(camera: cameraDescription);
+                      }))).then((value) {
+                        setState(() {
+                          imgPathCount = imagePaths.length;
+                        });
+                      });
+                    },
+                    icon: const Icon(Icons.add_a_photo),
+                  ),
+                ],
               ),
               // DropdownButtonFormField(
               //   decoration: InputDecoration(
@@ -343,6 +476,9 @@ class _EditInspectionState extends State<EditInspection> {
               // const SizedBox(
               //   height: 20.0,
               // ),
+              const SizedBox(
+                height: 5.0,
+              ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -422,6 +558,7 @@ class _EditInspectionState extends State<EditInspection> {
   @override
   void initState() {
     super.initState();
+    getImages();
     getListsForDropDown();
     segmentId = widget.inspection.segmentId!;
     complaintId = widget.inspection.complaintId!;
@@ -448,25 +585,31 @@ class _EditInspectionState extends State<EditInspection> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Edit Inspection",
-          style: kFontAppBar,
+    return WillPopScope(
+      onWillPop: () async {
+        imagePaths = [];
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "Edit Inspection",
+            style: kFontAppBar,
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                await updateInspection(context);
+              },
+              icon: const Icon(Icons.save_outlined),
+            )
+          ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              await updateInspection(context);
-            },
-            icon: const Icon(Icons.save_outlined),
-          )
-        ],
+        // drawer: SafeArea(
+        //   child: kGetDrawer(context),
+        // ),
+        body: isLoading ? loadingScreen() : loadForm(),
       ),
-      drawer: SafeArea(
-        child: kGetDrawer(context),
-      ),
-      body: isLoading ? loadingScreen() : loadForm(),
     );
   }
 }

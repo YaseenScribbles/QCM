@@ -6,4 +6,5 @@ class User {
   String? phone;
   String? token;
   bool? active;
+  String? department;
 }

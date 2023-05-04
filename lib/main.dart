@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qcm/pages/loading.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

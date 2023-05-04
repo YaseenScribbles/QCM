@@ -1,6 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
 import 'dart:io';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:qcm/api/company_service.dart';
 import 'package:qcm/api/complaint_service.dart';
@@ -10,37 +10,33 @@ import 'package:qcm/library/library.dart';
 import 'package:qcm/model/company.dart';
 import 'package:qcm/model/complaint.dart';
 import 'package:qcm/model/inspection.dart';
-import 'package:qcm/model/making_list.dart';
+import 'package:qcm/model/lot.dart';
 import 'package:qcm/model/segment.dart';
 import 'package:qcm/pages/inspections/display_picture.dart';
 import 'package:qcm/pages/inspections/inspection_list.dart';
 import 'package:qcm/pages/inspections/take_picture.dart';
-import 'package:camera/camera.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-class AddInspection extends StatefulWidget {
-  const AddInspection({super.key, required this.result});
-  final MakingList result;
-
+class EditInspectionByLot extends StatefulWidget {
+  const EditInspectionByLot(
+      {super.key, required this.inspection, required this.result});
+  final Inspection inspection;
+  final Lot result;
   @override
-  State<AddInspection> createState() => _AddInspectionState();
+  State<EditInspectionByLot> createState() => _EditInspectionByLotState();
 }
 
-class _AddInspectionState extends State<AddInspection> {
-  final remarksCtrl = TextEditingController();
-  final tagNoCtrl = TextEditingController();
-  final processNameCtrl = TextEditingController();
-  final sectionCtrl = TextEditingController();
-  final brandCtrl = TextEditingController();
-  final styleCtrl = TextEditingController();
-  final sizeCtrl = TextEditingController();
+class _EditInspectionByLotState extends State<EditInspectionByLot> {
   bool isLoading = true;
+  final lotNoCtrl = TextEditingController();
+  final brandCtrl = TextEditingController();
+  final merchCtrl = TextEditingController();
+  final remarksCtrl = TextEditingController();
   int segmentId = 0;
   int companyId = 0;
   int complaintId = 0;
   bool segmentValidation = false;
   bool complaintValidation = false;
-  // bool companyValidation = false;
-  // bool remarksValdiation = false;
   List<Segment> segmentList = [];
   List<Company> companyList = [];
   List<Complaint> tempComplaintList = [];
@@ -61,17 +57,31 @@ class _AddInspectionState extends State<AddInspection> {
     cameraDescription = cameras.first;
   }
 
-  updateImage(String path) {
-    setState(() {
-      imagePath = path;
-    });
+  getImages() async {
+    imagePaths = [];
+    var cache = DefaultCacheManager();
+    List<String> results =
+        await service.getImageByInspectionId(widget.inspection.id!);
+    if (results.isNotEmpty) {
+      for (var result in results) {
+        var file = await cache.getSingleFile(result);
+        imagePaths.add(file.path);
+        // imagePaths.add(await _findPath(result));
+      }
+    }
+    imagePathCount = imagePaths.length;
   }
 
-  updateComplaintList() {
+  // Future<String> _findPath(String imageUrl) async {
+  //   final cache = DefaultCacheManager();
+  //   final file = await cache.getSingleFile(imageUrl);
+  //   return file.path;
+  // }
+
+  updateComplaintList(int value) {
     setState(() {
-      tempComplaintList = complaintList
-          .where((element) => element.segmentId == segmentId)
-          .toList();
+      tempComplaintList =
+          complaintList.where((element) => element.segmentId == value).toList();
     });
   }
 
@@ -118,14 +128,17 @@ class _AddInspectionState extends State<AddInspection> {
 
     setState(() {
       isLoading = false;
+      tempComplaintList = complaintList;
     });
+
+    updateComplaintList(widget.inspection.segmentId!);
   }
 
   reset() {
     _key.currentState!.reset();
   }
 
-  saveInspection(BuildContext context) async {
+  updateInspection(BuildContext context) async {
     setState(() {
       segmentId < 1 ? segmentValidation = true : segmentValidation = false;
 
@@ -137,7 +150,9 @@ class _AddInspectionState extends State<AddInspection> {
       //     ? remarksValdiation = true
       //     : remarksValdiation = false;
 
-      // companyId < 1 ? companyValidation = true : companyValidation = false;
+      // companyId < 1
+      //     ? companyValidation = true
+      //     : companyValidation = false;
     });
 
     if (!segmentValidation && !complaintValidation) {
@@ -145,33 +160,46 @@ class _AddInspectionState extends State<AddInspection> {
         isLoading = true;
       });
       final inspection = Inspection();
-      inspection.uniqueId = widget.result.uniqueId;
+      inspection.id = widget.inspection.id;
+      inspection.uniqueId = widget.result.lotId;
       inspection.segmentId = segmentId;
       inspection.complaintId = complaintId;
       inspection.remarks = remarksCtrl.text;
-      inspection.companyId = int.parse(widget.result.companyId!);
-      inspection.isJobWork = 1;
+      inspection.companyId = widget.result.companyId!;
       inspection.userId = userId;
-      var result = await service.saveInspection(inspection);
-      if (imagePaths.isNotEmpty && result != 'Failed') {
-        await service.savePicture(result);
+      var result = await service.updateInspection(inspection);
+      if (imagePaths.isNotEmpty && result == 'Success') {
+        await service.savePicture(widget.inspection.id!);
       }
-
-      if (result != 'Failed') {
+      customSnackBar(context, result);
+      if (result == 'Success') {
         imagePaths = [];
-        customSnackBar(context, 'Success');
+        Navigator.pop(context);
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: ((context) {
           return const InspectionList();
         })));
-      } else {
-        customSnackBar(context, 'Failed');
       }
 
       setState(() {
         isLoading = false;
         imagePathCount = imagePaths.length;
       });
+    }
+  }
+
+  deleteInspection() async {
+    var inspection = Inspection();
+    inspection.id = widget.inspection.id;
+    var result = await service.deleteInspection(inspection);
+    customSnackBar(context, result);
+    if (result == 'Success') {
+      imagePaths = [];
+      Navigator.pop(context);
+      Navigator.pop(context);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: ((context) {
+        return const InspectionList();
+      })));
     }
   }
 
@@ -186,9 +214,9 @@ class _AddInspectionState extends State<AddInspection> {
               Flexible(
                 child: TextField(
                   readOnly: true,
-                  controller: tagNoCtrl,
+                  controller: lotNoCtrl,
                   decoration: const InputDecoration(
-                    labelText: "Tag No",
+                    labelText: "Lot No",
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -199,9 +227,9 @@ class _AddInspectionState extends State<AddInspection> {
               Flexible(
                 child: TextField(
                   readOnly: true,
-                  controller: processNameCtrl,
+                  controller: merchCtrl,
                   decoration: const InputDecoration(
-                    labelText: "Process",
+                    labelText: "Merch",
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -213,62 +241,17 @@ class _AddInspectionState extends State<AddInspection> {
           ),
           TextField(
             readOnly: true,
-            controller: sectionCtrl,
+            controller: brandCtrl,
             decoration: const InputDecoration(
-              labelText: "Section",
+              labelText: "Brand",
               border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(
             height: 20.0,
           ),
-          Row(
-            children: [
-              Flexible(
-                flex: 2,
-                child: TextField(
-                  readOnly: true,
-                  controller: brandCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Brand",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 20.0,
-              ),
-              Flexible(
-                flex: 2,
-                child: TextField(
-                  readOnly: true,
-                  controller: styleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Style",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 20.0,
-              ),
-              Flexible(
-                flex: 1,
-                child: TextField(
-                  readOnly: true,
-                  controller: sizeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Size ",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 20.0,
-          ),
           DropdownButtonFormField(
+            value: segmentId,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
               labelText: "Segment",
@@ -286,13 +269,15 @@ class _AddInspectionState extends State<AddInspection> {
             onChanged: ((value) {
               segmentId = value!;
               reset();
-              updateComplaintList();
+              complaintId = 0;
+              updateComplaintList(value);
             }),
           ),
           const SizedBox(
             height: 20.0,
           ),
           DropdownButtonFormField(
+            value: complaintId != 0 ? complaintId : null,
             key: _key,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
@@ -384,49 +369,6 @@ class _AddInspectionState extends State<AddInspection> {
               ),
             ),
           ],
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.start,
-          //   children: [
-          //     GestureDetector(
-          //       onTap: () async {
-          //         await getCamera();
-          //         Navigator.push(context,
-          //             MaterialPageRoute(builder: ((context) {
-          //           return TakePictureScreen(camera: cameraDescription);
-          //         }))).then((value) {
-          //           if (value != null) {
-          //             image = value;
-          //             updateImage(value.path);
-          //           }
-          //         });
-          //       },
-          //       child: Container(
-          //         decoration: BoxDecoration(
-          //           border: Border.all(width: 2.0, color: Colors.grey.shade800),
-          //         ),
-          //         height: 200.0,
-          //         width: MediaQuery.of(context).size.width * 0.3,
-          //         child: imagePath == ''
-          //             ? const Center(
-          //                 child: Icon(Icons.camera_alt),
-          //               )
-          //             : Image.file(File(imagePath)),
-          //       ),
-          //     ),
-          //     // IconButton(
-          //     //   onPressed: () async {
-          //     //     await getCamera();
-          //     //     Navigator.push(context,
-          //     //         MaterialPageRoute(builder: ((context) {
-          //     //       return TakePictureScreen(camera: cameraDescription);
-          //     //     })));
-          //     //   },
-          //     //   iconSize: 30.0,
-          //     //   alignment: Alignment.center,
-          //     //   icon: Icon(Icons.camera_enhance),
-          //     // ),
-          //   ],
-          // ),
           const SizedBox(
             height: 5.0,
           ),
@@ -449,34 +391,11 @@ class _AddInspectionState extends State<AddInspection> {
               ),
             ],
           ),
-          // DropdownButtonFormField(
-          //   decoration: InputDecoration(
-          //     border: const OutlineInputBorder(),
-          //     hintText: "Company",
-          //     errorText: companyValidation ? "Select valid company" : null,
-          //   ),
-          //   value: companyId,
-          //   items: companyList.map((e) {
-          //     return DropdownMenuItem(
-          //       value: e.id,
-          //       child: Text(
-          //         e.name.toString(),
-          //         style: kFontBold,
-          //       ),
-          //     );
-          //   }).toList(),
-          //   onChanged: ((value) {
-          //     companyId = value!;
-          //   }),
-          // ),
-          // const SizedBox(
-          //   height: 20.0,
-          // ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async {
-                await saveInspection(context);
+                await updateInspection(context);
               },
               style: ElevatedButton.styleFrom(
                 shape: const StadiumBorder(),
@@ -486,7 +405,61 @@ class _AddInspectionState extends State<AddInspection> {
                 style: kFontBold,
               ),
             ),
-          )
+          ),
+          if (role == 'supervisor' || role == 'admin') ...[
+            const SizedBox(
+              height: 5.0,
+            ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  return showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text(
+                            'Delete',
+                            style: kFontBold,
+                          ),
+                          content: Text(
+                            'Are you sure ?',
+                            style: kFontBold,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () async {
+                                await deleteInspection();
+                              },
+                              child: Text(
+                                'Ok',
+                                style: kFontBold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                'Cancel',
+                                style: kFontBold,
+                              ),
+                            ),
+                          ],
+                        );
+                      });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: const StadiumBorder(),
+                ),
+                child: const Text(
+                  'Delete',
+                  style: kFontBold,
+                ),
+              ),
+            ),
+          ],
         ]),
       )),
     );
@@ -495,53 +468,35 @@ class _AddInspectionState extends State<AddInspection> {
   @override
   void initState() {
     super.initState();
+    getImages();
     getListsForDropDown();
-    tagNoCtrl.text = widget.result.tagNo!;
-    processNameCtrl.text = widget.result.processName!;
-    sectionCtrl.text = widget.result.supplierName!;
+    segmentId = widget.inspection.segmentId!;
+    complaintId = widget.inspection.complaintId!;
+    lotNoCtrl.text = widget.result.lotNo!;
+    merchCtrl.text = widget.result.merchandizer!;
     brandCtrl.text = widget.result.brand!;
-    styleCtrl.text = widget.result.style!;
-    sizeCtrl.text = widget.result.size!;
+    remarksCtrl.text = widget.inspection.remarks ?? '';
   }
 
   @override
   void dispose() {
     super.dispose();
-    remarksCtrl.dispose();
-    tagNoCtrl.dispose();
-    processNameCtrl.dispose();
-    sectionCtrl.dispose();
     brandCtrl.dispose();
-    styleCtrl.dispose();
-    sizeCtrl.dispose();
+    lotNoCtrl.dispose();
+    merchCtrl.dispose();
+    remarksCtrl.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        imagePaths = [];
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "Add Inspection",
-            style: kFontAppBar,
-          ),
-          actions: [
-            IconButton(
-                onPressed: () async {
-                  await saveInspection(context);
-                },
-                icon: Icon(Icons.save_outlined))
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Edit Inspection',
+          style: kFontAppBar,
         ),
-        // drawer: SafeArea(
-        //   child: kGetDrawer(context),
-        // ),
-        body: isLoading ? loadingScreen() : loadForm(),
       ),
+      body: isLoading ? loadingScreen() : loadForm(),
     );
   }
 }

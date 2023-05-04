@@ -5,6 +5,7 @@ class Inspection {
   int? complaintId;
   String? remarks;
   int? companyId;
+  int? isJobWork;
   int? userId;
   DateTime? createdAt;
 }

@@ -1,6 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
 import 'dart:io';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:qcm/api/company_service.dart';
 import 'package:qcm/api/complaint_service.dart';
@@ -10,37 +10,30 @@ import 'package:qcm/library/library.dart';
 import 'package:qcm/model/company.dart';
 import 'package:qcm/model/complaint.dart';
 import 'package:qcm/model/inspection.dart';
-import 'package:qcm/model/making_list.dart';
+import 'package:qcm/model/lot.dart';
 import 'package:qcm/model/segment.dart';
 import 'package:qcm/pages/inspections/display_picture.dart';
 import 'package:qcm/pages/inspections/inspection_list.dart';
 import 'package:qcm/pages/inspections/take_picture.dart';
-import 'package:camera/camera.dart';
 
-class AddInspection extends StatefulWidget {
-  const AddInspection({super.key, required this.result});
-  final MakingList result;
-
+class AddInspectionByLot extends StatefulWidget {
+  const AddInspectionByLot({super.key, required this.result});
+  final Lot result;
   @override
-  State<AddInspection> createState() => _AddInspectionState();
+  State<AddInspectionByLot> createState() => _AddInspectionByLotState();
 }
 
-class _AddInspectionState extends State<AddInspection> {
-  final remarksCtrl = TextEditingController();
-  final tagNoCtrl = TextEditingController();
-  final processNameCtrl = TextEditingController();
-  final sectionCtrl = TextEditingController();
-  final brandCtrl = TextEditingController();
-  final styleCtrl = TextEditingController();
-  final sizeCtrl = TextEditingController();
+class _AddInspectionByLotState extends State<AddInspectionByLot> {
   bool isLoading = true;
+  final lotNoCtrl = TextEditingController();
+  final brandCtrl = TextEditingController();
+  final merchCtrl = TextEditingController();
+  final remarksCtrl = TextEditingController();
   int segmentId = 0;
   int companyId = 0;
   int complaintId = 0;
   bool segmentValidation = false;
   bool complaintValidation = false;
-  // bool companyValidation = false;
-  // bool remarksValdiation = false;
   List<Segment> segmentList = [];
   List<Company> companyList = [];
   List<Complaint> tempComplaintList = [];
@@ -145,12 +138,12 @@ class _AddInspectionState extends State<AddInspection> {
         isLoading = true;
       });
       final inspection = Inspection();
-      inspection.uniqueId = widget.result.uniqueId;
+      inspection.uniqueId = widget.result.lotId;
       inspection.segmentId = segmentId;
       inspection.complaintId = complaintId;
       inspection.remarks = remarksCtrl.text;
-      inspection.companyId = int.parse(widget.result.companyId!);
-      inspection.isJobWork = 1;
+      inspection.companyId = widget.result.companyId!;
+      inspection.isJobWork = 0;
       inspection.userId = userId;
       var result = await service.saveInspection(inspection);
       if (imagePaths.isNotEmpty && result != 'Failed') {
@@ -186,9 +179,9 @@ class _AddInspectionState extends State<AddInspection> {
               Flexible(
                 child: TextField(
                   readOnly: true,
-                  controller: tagNoCtrl,
+                  controller: lotNoCtrl,
                   decoration: const InputDecoration(
-                    labelText: "Tag No",
+                    labelText: "Lot No",
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -199,9 +192,9 @@ class _AddInspectionState extends State<AddInspection> {
               Flexible(
                 child: TextField(
                   readOnly: true,
-                  controller: processNameCtrl,
+                  controller: merchCtrl,
                   decoration: const InputDecoration(
-                    labelText: "Process",
+                    labelText: "Merch",
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -213,57 +206,11 @@ class _AddInspectionState extends State<AddInspection> {
           ),
           TextField(
             readOnly: true,
-            controller: sectionCtrl,
+            controller: brandCtrl,
             decoration: const InputDecoration(
-              labelText: "Section",
+              labelText: "Brand",
               border: OutlineInputBorder(),
             ),
-          ),
-          const SizedBox(
-            height: 20.0,
-          ),
-          Row(
-            children: [
-              Flexible(
-                flex: 2,
-                child: TextField(
-                  readOnly: true,
-                  controller: brandCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Brand",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 20.0,
-              ),
-              Flexible(
-                flex: 2,
-                child: TextField(
-                  readOnly: true,
-                  controller: styleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Style",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 20.0,
-              ),
-              Flexible(
-                flex: 1,
-                child: TextField(
-                  readOnly: true,
-                  controller: sizeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Size ",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
           ),
           const SizedBox(
             height: 20.0,
@@ -384,49 +331,6 @@ class _AddInspectionState extends State<AddInspection> {
               ),
             ),
           ],
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.start,
-          //   children: [
-          //     GestureDetector(
-          //       onTap: () async {
-          //         await getCamera();
-          //         Navigator.push(context,
-          //             MaterialPageRoute(builder: ((context) {
-          //           return TakePictureScreen(camera: cameraDescription);
-          //         }))).then((value) {
-          //           if (value != null) {
-          //             image = value;
-          //             updateImage(value.path);
-          //           }
-          //         });
-          //       },
-          //       child: Container(
-          //         decoration: BoxDecoration(
-          //           border: Border.all(width: 2.0, color: Colors.grey.shade800),
-          //         ),
-          //         height: 200.0,
-          //         width: MediaQuery.of(context).size.width * 0.3,
-          //         child: imagePath == ''
-          //             ? const Center(
-          //                 child: Icon(Icons.camera_alt),
-          //               )
-          //             : Image.file(File(imagePath)),
-          //       ),
-          //     ),
-          //     // IconButton(
-          //     //   onPressed: () async {
-          //     //     await getCamera();
-          //     //     Navigator.push(context,
-          //     //         MaterialPageRoute(builder: ((context) {
-          //     //       return TakePictureScreen(camera: cameraDescription);
-          //     //     })));
-          //     //   },
-          //     //   iconSize: 30.0,
-          //     //   alignment: Alignment.center,
-          //     //   icon: Icon(Icons.camera_enhance),
-          //     // ),
-          //   ],
-          // ),
           const SizedBox(
             height: 5.0,
           ),
@@ -449,29 +353,6 @@ class _AddInspectionState extends State<AddInspection> {
               ),
             ],
           ),
-          // DropdownButtonFormField(
-          //   decoration: InputDecoration(
-          //     border: const OutlineInputBorder(),
-          //     hintText: "Company",
-          //     errorText: companyValidation ? "Select valid company" : null,
-          //   ),
-          //   value: companyId,
-          //   items: companyList.map((e) {
-          //     return DropdownMenuItem(
-          //       value: e.id,
-          //       child: Text(
-          //         e.name.toString(),
-          //         style: kFontBold,
-          //       ),
-          //     );
-          //   }).toList(),
-          //   onChanged: ((value) {
-          //     companyId = value!;
-          //   }),
-          // ),
-          // const SizedBox(
-          //   height: 20.0,
-          // ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -496,52 +377,30 @@ class _AddInspectionState extends State<AddInspection> {
   void initState() {
     super.initState();
     getListsForDropDown();
-    tagNoCtrl.text = widget.result.tagNo!;
-    processNameCtrl.text = widget.result.processName!;
-    sectionCtrl.text = widget.result.supplierName!;
+    lotNoCtrl.text = widget.result.lotNo!;
+    merchCtrl.text = widget.result.merchandizer!;
     brandCtrl.text = widget.result.brand!;
-    styleCtrl.text = widget.result.style!;
-    sizeCtrl.text = widget.result.size!;
   }
 
   @override
   void dispose() {
     super.dispose();
-    remarksCtrl.dispose();
-    tagNoCtrl.dispose();
-    processNameCtrl.dispose();
-    sectionCtrl.dispose();
     brandCtrl.dispose();
-    styleCtrl.dispose();
-    sizeCtrl.dispose();
+    lotNoCtrl.dispose();
+    merchCtrl.dispose();
+    remarksCtrl.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        imagePaths = [];
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "Add Inspection",
-            style: kFontAppBar,
-          ),
-          actions: [
-            IconButton(
-                onPressed: () async {
-                  await saveInspection(context);
-                },
-                icon: Icon(Icons.save_outlined))
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Add Inspection',
+          style: kFontAppBar,
         ),
-        // drawer: SafeArea(
-        //   child: kGetDrawer(context),
-        // ),
-        body: isLoading ? loadingScreen() : loadForm(),
       ),
+      body: isLoading ? loadingScreen() : loadForm(),
     );
   }
 }

@@ -8,7 +8,11 @@ import 'package:qcm/pages/complaints/complaint_list.dart';
 import 'package:qcm/pages/inspections/inspection_list.dart';
 import 'package:qcm/pages/inspections/inspections_search.dart';
 import 'package:qcm/pages/login.dart';
+import 'package:qcm/pages/lots/lot_search.dart';
 import 'package:qcm/pages/segments/segment_list.dart';
+import 'package:qcm/pages/suppliers/supplier_list.dart';
+import 'package:qcm/pages/users/password_update.dart';
+import 'package:qcm/pages/users/user_register.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -81,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                             }));
                           }),
                           child: const Text(
-                            'Segments',
+                            'Processes',
                             style: kIconFont,
                           ),
                         ),
@@ -150,8 +154,101 @@ class _HomePageState extends State<HomePage> {
                               return const InspectionsSearch();
                             }));
                           }),
+                          child: Center(
+                            child: const Text(
+                              'Inspection Finder',
+                              style: kIconFont,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 20.0,
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const SupplierList();
+                            }));
+                          }),
+                          child: Center(
+                            child: const Text(
+                              'Job Work Finder',
+                              style: kIconFont,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 20.0,
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const LotSearch();
+                            }));
+                          }),
                           child: const Text(
-                            'Inspection Finder',
+                            'Lot Finder',
+                            style: kIconFont,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 20.0,
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const UserRegister();
+                            }));
+                          }),
+                          child: const Text(
+                            'Create User',
+                            style: kIconFont,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 20.0,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const PasswordUpdate();
+                            }));
+                          }),
+                          child: const Text(
+                            'Change Password',
                             style: kIconFont,
                           ),
                         ),
@@ -193,8 +290,81 @@ class _HomePageState extends State<HomePage> {
                               return const InspectionsSearch();
                             }));
                           }),
+                          child: Center(
+                            child: const Text(
+                              'Inspection Finder',
+                              style: kIconFont,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 20.0,
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const SupplierList();
+                            }));
+                          }),
+                          child: Center(
+                            child: const Text(
+                              'Job Work Finder',
+                              style: kIconFont,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 20.0,
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const LotSearch();
+                            }));
+                          }),
                           child: const Text(
-                            'Finder',
+                            'Lot Finder',
+                            style: kIconFont,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 20.0,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 120.0,
+                        child: ElevatedButton(
+                          onPressed: (() {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const PasswordUpdate();
+                            }));
+                          }),
+                          child: const Text(
+                            'Change Password',
                             style: kIconFont,
                           ),
                         ),

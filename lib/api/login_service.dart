@@ -44,8 +44,8 @@ class LogInService {
       role = '';
       userId = 0;
       await _repository.updateUserInfo();
-      await _repository.deleteCacheDir();
-      await _repository.deleteAppDir();
+      // await _repository.deleteCacheDir();
+      // await _repository.deleteAppDir();
       return 'Logged Out';
     } else {
       return response.reasonPhrase.toString();

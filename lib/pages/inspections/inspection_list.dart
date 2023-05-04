@@ -10,10 +10,12 @@ import 'package:qcm/model/company.dart';
 import 'package:qcm/model/complaint.dart';
 import 'package:qcm/model/inspection.dart';
 import 'package:date_field/date_field.dart';
+import 'package:qcm/model/lot.dart';
 import 'package:qcm/model/making_list.dart';
 import 'package:qcm/model/segment.dart';
 import 'package:qcm/pages/inspections/edit_inspection.dart';
 import 'package:intl/intl.dart';
+import 'package:qcm/pages/lots/edit_inspection_by_lot.dart';
 
 class InspectionList extends StatefulWidget {
   const InspectionList({super.key});
@@ -27,6 +29,7 @@ class _InspectionListState extends State<InspectionList> {
   int count = 0;
   List<Inspection> inspectionList = [];
   List<MakingList> makingList = [];
+  List<Lot> lotList = [];
   List<Segment> segmentList = [];
   List<Complaint> complaintList = [];
   List<Company> companyList = [];
@@ -115,25 +118,39 @@ class _InspectionListState extends State<InspectionList> {
       for (var inspection in inspections) {
         var model = Inspection();
         var result = MakingList();
-        model.id = inspection['id'];
+        var lot = Lot();
+        model.id = int.parse(inspection['id']);
         model.uniqueId = inspection['unique_id'];
         model.segmentId = int.parse(inspection['segment_id']);
         model.complaintId = int.parse(inspection['complaint_id']);
         model.remarks = inspection['remarks'];
         model.companyId = int.parse(inspection['company_id']);
+        model.isJobWork = int.parse(inspection['is_jobwork']);
         model.userId = int.parse(inspection['user_id']);
         model.createdAt = DateTime.parse(inspection['created_at']);
-        result.uniqueId = inspection['making']['unique_id'];
-        result.supplierName = inspection['making']['supplier_name'];
-        result.brand = inspection['making']['brand'];
-        result.tagNo = inspection['making']['tag_no'];
-        result.style = inspection['making']['style'];
-        result.size = inspection['making']['size'];
-        result.processName = inspection['making']['process_name'];
-        result.companyId = inspection['making']['company_id'];
-        result.ir = inspection['making']['ir'];
         inspectionList.add(model);
-        makingList.add(result);
+
+        if (inspection['tag_no'].toString() != 'null') {
+          result.uniqueId = inspection['unique_id'];
+          result.supplierName = inspection['supplier_name'];
+          result.brand = inspection['brand'];
+          result.tagNo = inspection['tag_no'];
+          result.style = inspection['style'];
+          result.size = inspection['size'];
+          result.processName = inspection['process_name'];
+          result.companyId = inspection['company_id'];
+          result.ir = inspection['ir'];
+          makingList.add(result);
+        }
+
+        if (inspection['lot_id'].toString() != 'null') {
+          lot.lotId = inspection['lot_id'];
+          lot.lotNo = inspection['lot_no'];
+          lot.brand = inspection['lot_brand'];
+          lot.merchandizer = inspection['merchandizer'];
+          lot.companyId = int.parse(inspection['company_id']);
+          lotList.add(lot);
+        }
       }
     }
     setState(() {
@@ -159,6 +176,14 @@ class _InspectionListState extends State<InspectionList> {
     );
   }
 
+  int getLotListIndex(String lotId) {
+    return lotList.indexWhere((element) => element.lotId == lotId);
+  }
+
+  int getMakingListIndex(String uniqueId) {
+    return makingList.indexWhere((element) => element.uniqueId == uniqueId);
+  }
+
   getListView() {
     return ListView.builder(
         shrinkWrap: true,
@@ -171,66 +196,131 @@ class _InspectionListState extends State<InspectionList> {
                   dateFormat.format(inspectionList[index].createdAt!));
               var currentDate = DateTime.now();
               if (DateUtils.isSameDay(currentDate, date)) {
-                Navigator.push(context, MaterialPageRoute(builder: ((context) {
-                  return EditInspection(
-                      inspection: inspectionList[index],
-                      result: makingList[index]);
-                })));
+                inspectionList[index].isJobWork == 0
+                    ? Navigator.push(context,
+                        MaterialPageRoute(builder: ((context) {
+                        return EditInspectionByLot(
+                            inspection: inspectionList[index],
+                            result: lotList[getLotListIndex(
+                                inspectionList[index].uniqueId!)]);
+                      })))
+                    : Navigator.push(context,
+                        MaterialPageRoute(builder: ((context) {
+                        return EditInspection(
+                            inspection: inspectionList[index],
+                            result: makingList[getMakingListIndex(
+                                inspectionList[index].uniqueId!)]);
+                      })));
               } else {
                 customSnackBar(context, 'Access denied');
               }
             },
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Card(
-                elevation: 10.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (inspectionList[index].isJobWork == 1) ...[
                       const Text(
                         'Section :',
                         style: kFontBold,
                       ),
                       Text(
-                        makingList[index].supplierName.toString(),
+                        makingList[getMakingListIndex(
+                                inspectionList[index].uniqueId!)]
+                            .supplierName
+                            .toString(),
                         style: kFontBold,
                       ),
                       const SizedBox(
                         height: 10.0,
                       ),
                       Text(
-                        'Process : ${makingList[index].processName}',
+                        'Process : ${makingList[getMakingListIndex(inspectionList[index].uniqueId!)].processName}',
                         style: kFontBold,
                       ),
                       const SizedBox(
                         height: 10.0,
                       ),
                       Text(
-                        'Tag No : ${makingList[index].tagNo}',
+                        'Tag No : ${makingList[getMakingListIndex(inspectionList[index].uniqueId!)].tagNo}',
                         style: kFontBold,
                       ),
                       const SizedBox(
                         height: 10.0,
                       ),
                       Text(
-                        'Brand : ${makingList[index].brand}',
+                        'Brand : ${makingList[getMakingListIndex(inspectionList[index].uniqueId!)].brand}',
                         style: kFontBold,
                       ),
                       const SizedBox(
                         height: 10.0,
                       ),
                       Text(
-                        'Style : ${makingList[index].style}',
+                        'Style : ${makingList[getMakingListIndex(inspectionList[index].uniqueId!)].style}',
                         style: kFontBold,
                       ),
                       const SizedBox(
                         height: 10.0,
                       ),
                       Text(
-                        'Size : ${makingList[index].size}',
+                        'Size : ${makingList[getMakingListIndex(inspectionList[index].uniqueId!)].size}',
+                        style: kFontBold,
+                      ),
+                      const SizedBox(
+                        height: 10.0,
+                      ),
+                      Text(
+                        'Segment : ${getSegmentName(inspectionList[index].segmentId!)}',
+                        style: kFontBold,
+                      ),
+                      const SizedBox(
+                        height: 10.0,
+                      ),
+                      Text(
+                        'Complaint : ${getComplaintName(inspectionList[index].complaintId!)}',
+                        style: kFontBold,
+                      ),
+                      const SizedBox(
+                        height: 10.0,
+                      ),
+                      if (inspectionList[index].remarks.toString() !=
+                          'null') ...[
+                        const Text(
+                          'Remarks :',
+                          style: kFontBold,
+                        ),
+                        Text(
+                          inspectionList[index].remarks.toString(),
+                          style: kFontBold,
+                        ),
+                      ],
+                    ] else if (inspectionList[index].isJobWork == 0) ...[
+                      Text(
+                        'Lot No : ${lotList[getLotListIndex(inspectionList[index].uniqueId!)].lotNo.toString()}',
+                        style: kFontBold,
+                      ),
+                      const SizedBox(
+                        height: 10.0,
+                      ),
+                      const Text(
+                        'Brand :',
+                        style: kFontBold,
+                      ),
+                      Text(
+                        lotList[getLotListIndex(
+                                inspectionList[index].uniqueId!)]
+                            .brand
+                            .toString(),
+                        style: kFontBold,
+                      ),
+                      const SizedBox(
+                        height: 10.0,
+                      ),
+                      Text(
+                        'Merch : ${lotList[getLotListIndex(inspectionList[index].uniqueId!)].merchandizer.toString()}',
                         style: kFontBold,
                       ),
                       const SizedBox(
@@ -262,7 +352,7 @@ class _InspectionListState extends State<InspectionList> {
                         ),
                       ],
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -305,11 +395,11 @@ class _InspectionListState extends State<InspectionList> {
       drawer: SafeArea(child: kGetDrawer(context)),
       body: SingleChildScrollView(
         child: SafeArea(
-            child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            children: [
-              Row(
+            child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(10.0, 16.0, 10.0, 0.0),
+              child: Row(
                 children: [
                   Flexible(
                     flex: 2,
@@ -346,16 +436,16 @@ class _InspectionListState extends State<InspectionList> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 20.0,
-              ),
-              isLoading
-                  ? loadingScreen()
-                  : count == 0
-                      ? emptyInspections()
-                      : getListView(),
-            ],
-          ),
+            ),
+            const SizedBox(
+              height: 14.0,
+            ),
+            isLoading
+                ? loadingScreen()
+                : count == 0
+                    ? emptyInspections()
+                    : getListView(),
+          ],
         )),
       ),
     );

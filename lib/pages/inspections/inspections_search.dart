@@ -69,7 +69,7 @@ class _InspectionsSearchState extends State<InspectionsSearch> {
       itemCount: count,
       itemBuilder: ((context, index) {
         return Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.fromLTRB(2.0, 0, 2.0, 1.0),
           child: MyCard(
             supplierName: resultList[index].supplierName.toString(),
             brandName: resultList[index].brand.toString(),
@@ -104,16 +104,17 @@ class _InspectionsSearchState extends State<InspectionsSearch> {
       drawer: SafeArea(child: kGetDrawer(context)),
       body: SingleChildScrollView(
         child: SafeArea(
-            child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            children: [
-              Row(
+            child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Flexible(
                     flex: 2,
                     child: TextField(
+                      textCapitalization: TextCapitalization.characters,
                       controller: tagNoCtrl,
                       decoration: InputDecoration(
                         hintText: "Tag No",
@@ -149,16 +150,16 @@ class _InspectionsSearchState extends State<InspectionsSearch> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 20.0,
-              ),
-              isLoading
-                  ? loadingScreen()
-                  : count == 0
-                      ? emptyResults()
-                      : getListView(),
-            ],
-          ),
+            ),
+            const SizedBox(
+              height: 20.0,
+            ),
+            isLoading
+                ? loadingScreen()
+                : count == 0
+                    ? emptyResults()
+                    : getListView(),
+          ],
         )),
       ),
     );
